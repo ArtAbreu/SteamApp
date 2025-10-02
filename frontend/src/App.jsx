@@ -1,253 +1,299 @@
-// frontend/src/App.jsx (Versão FINAL: Usabilidade e Histórico 24h)
-import React, { useState, useRef, useEffect } from 'react';
-import './App.css'; 
+import React, { useState } from 'react';
+import { RefreshCcw, Users, DollarSign, XCircle, CheckCircle, Clock } from 'lucide-react';
 
-function App() {
+// Estilização com Tailwind CSS
+const App = () => {
   const [steamIds, setSteamIds] = useState('');
-  const [reportData, setReportData] = useState(null); 
+  const [results, setResults] = useState([]);
+  const [friendSteamId, setFriendSteamId] = useState('');
+  const [friendResults, setFriendResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const logContainerRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('value');
+  const [error, setError] = useState(null);
 
-  // Efeito para manter o console de log sempre na última linha
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [reportData?.logs]);
-
-  // NOVO: Função para resetar o estado da aplicação
-  const handleReset = () => {
-    setSteamIds('');
-    setReportData(null);
-    setIsLoading(false);
-    console.log("Interface resetada. Pronto para nova análise.");
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    setReportData({ logs: [{ message: '[GERAL] Iniciando conexão com o Servidor de Análise...', type: 'info' }], reportHtml: null }); 
+  // Função para lidar com a busca de valor de inventário (Rota: /api/process)
+  const handleProcessInventory = async () => {
+    setError(null);
     setIsLoading(true);
+    setResults([]);
+
+    if (!steamIds.trim()) {
+      setError('Por favor, insira pelo menos uma Steam ID para calcular o valor.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch('/process', {
+      const response = await fetch('/api/process', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: `steam_ids=${encodeURIComponent(steamIds)}`,
+        body: JSON.stringify({ steamIds }),
       });
 
       const data = await response.json();
-
-      if (response.ok) {
-        setReportData(data);
+      
+      if (!response.ok) {
+        setError(data.error || 'Ocorreu um erro desconhecido ao processar o valor.');
+        setResults([]);
       } else {
-        setReportData({ 
-            reportHtml: `<div class="error-message">Erro (${response.status}): ${data.error || 'Erro desconhecido.'}</div>`, 
-            logs: data.logs || [{ message: `[ERRO] Falha na validação: ${data.error || 'Erro desconhecido.'}`, type: 'error' }]
-        });
+        setResults(data);
       }
-
-    } catch (error) {
-      setReportData({ 
-        reportHtml: `<div class="error-message">Erro de conexão: Não foi possível alcançar o servidor backend.</div>`, 
-        logs: [{ message: `[ERRO] Falha de rede/conexão: Não foi possível conectar ao servidor. Verifique se o Node está rodando.`, type: 'error' }] 
-      });
-      console.error('Erro na requisição:', error);
+    } catch (err) {
+      setError('Erro de conexão com o servidor. Verifique se o backend está rodando.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDownloadReport = () => {
-    if (reportData?.reportHtml) {
-      const blob = new Blob([reportData.reportHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `relatorio_artcases_execucao_${new Date().toISOString().slice(0, 10)}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  // Função para lidar com a busca de lista de amigos (Rota: /api/getfriends)
+  const handleGetFriends = async () => {
+    setError(null);
+    setIsLoading(true);
+    setFriendResults([]);
+
+    if (!friendSteamId.trim()) {
+      setError('Por favor, insira a Steam ID de origem para buscar a lista de amigos.');
+      setIsLoading(false);
+      return;
     }
+
+    try {
+      const response = await fetch('/api/getfriends', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ steamId: friendSteamId.trim() }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || 'Ocorreu um erro desconhecido ao buscar amigos.');
+        setFriendResults([]);
+      } else {
+        setFriendResults(data.friends);
+      }
+    } catch (err) {
+      setError('Erro de conexão com o servidor. Verifique se o backend está rodando.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  // Componente de resultado de valor de inventário
+  const ValueResult = ({ item }) => {
+    const isSuccess = item.status === 'OK';
+    const isPrivate = item.status.includes('private');
+    const isRateLimited = item.status.includes('Rate Limit');
+
+    return (
+      <div className={`p-4 rounded-xl shadow-md transition duration-300 ${
+        isSuccess ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
+      }`}>
+        <div className="font-semibold text-lg text-gray-700 break-all mb-1">
+          ID: {item.steamId}
+        </div>
+        <div className="flex items-center space-x-2">
+          {isSuccess ? (
+            <CheckCircle className="w-5 h-5 text-green-600" />
+          ) : isPrivate ? (
+            <Users className="w-5 h-5 text-yellow-600" />
+          ) : isRateLimited ? (
+             <Clock className="w-5 h-5 text-blue-600" />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-600" />
+          )}
+          <span className="text-gray-900 font-bold">
+            Valor: {item.value === 'N/A' ? 'Não Disponível' : `R$ ${item.value}`}
+          </span>
+        </div>
+        {!isSuccess && (
+          <p className="text-sm text-gray-600 mt-2">
+            Status: {item.status.length > 50 ? item.status.substring(0, 50) + '...' : item.status}
+          </p>
+        )}
+      </div>
+    );
   };
   
-  const handleDownloadHistory = async () => {
-    try {
-        const response = await fetch('/download-history', {
-            method: 'GET',
-        });
-
-        if (response.ok) {
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = `relatorio_historico_24h_${new Date().toISOString().slice(0, 10)}.html`;
-
-            if (contentDisposition) {
-                const match = contentDisposition.match(/filename="(.+)"/);
-                if (match && match[1]) {
-                    filename = match[1];
-                }
-            }
-
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            alert("Download do histórico de 24h iniciado com sucesso!");
-        } else {
-             const message = await response.text();
-             alert(`Falha no download do histórico: ${message || 'Nenhum perfil processado nas últimas 24 horas ou erro desconhecido.'}`);
+  // Componente de resultado de lista de amigos
+  const FriendsResult = () => {
+    if (friendResults.length === 0) {
+        if (friendSteamId) {
+            return (
+                <div className="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg">
+                    <p>Nenhum amigo encontrado ou a lista é privada.</p>
+                    <p className="text-sm mt-1">Lembre-se: A lista de amigos e o perfil devem ser públicos.</p>
+                </div>
+            );
         }
-    } catch (error) {
-        alert('Erro de rede: Não foi possível conectar ao servidor para download do histórico.');
-        console.error('Erro de download:', error);
+        return null;
     }
-  };
-
-
-  const getLogClassName = (type) => {
-    switch(type) {
-      case 'error': return 'log-error';
-      case 'warn': return 'log-warn';
-      case 'success': return 'log-success';
-      default: return 'log-info';
-    }
-  }
-
-  const renderFormOrLogs = () => {
-    
-    if (!isLoading && !reportData?.reportHtml) {
-        return (
-          <form onSubmit={handleSubmit}>
-            <h3>ENTRADA DE DADOS</h3>
-            <textarea
-              placeholder="Cole uma Steam ID (64-bit) por linha. Ex: 76561198000000000"
-              value={steamIds}
-              onChange={(e) => setSteamIds(e.target.value)}
-              rows="10"
-              disabled={isLoading}
-            />
-            <button type="submit" disabled={isLoading || steamIds.trim().length === 0}>
-              INICIAR VERIFICAÇÃO PREMIUM
-            </button>
-            <button 
-                onClick={handleDownloadHistory} 
-                className="download-button"
-                style={{ backgroundColor: '#5c5c8a', marginTop: '10px' }}
-                type="button"
-                disabled={isLoading}
-                title="Baixa o relatório de todas as IDs processadas com sucesso nas últimas 24 horas">
-                ⬇️ BAIXAR HISTÓRICO (ÚLTIMAS 24H)
-            </button>
-            <p className="warning-note">
-                ⚠️ **Checagem Otimizada**: O sistema checa Banimentos primeiro e pula IDs banidas, economizando tempo. IDs já processadas são salvas em `history.json` e só são reprocessadas em caso de falha anterior.
-            </p>
-          </form>
-        );
-    }
-    
-    const currentLogs = reportData?.logs || [];
     
     return (
-        <div className="log-viewer-container">
-            <h3>CONSOLE DE PROCESSAMENTO AVANÇADO</h3>
-             {isLoading && (
-                 <div className="loading-bar-wrapper">
-                    <div className="loading-bar"></div>
-                 </div>
-             )}
-            <div className="log-viewer" ref={logContainerRef}>
-                {currentLogs.map((log, index) => (
-                    <p key={index} className={getLogClassName(log.type)}>
-                        <span className="log-id-prefix">{log.message.substring(0, log.message.indexOf('] ') + 1)}</span>
-                        {log.message.substring(log.message.indexOf('] ') + 1).trim()}
-                    </p>
-                ))}
-            </div>
-             {!isLoading && reportData?.successCount >= 0 && (
-                <>
-                    <p className="summary-success">
-                        ✅ **CONCLUÍDO**: {reportData.successCount} novos inventários processados com sucesso.
-                    </p>
-                    {/* NOVO BOTÃO DE RESET */}
-                    <button 
-                        onClick={handleReset} 
-                        className="download-button"
-                        style={{ backgroundColor: '#FF5722', marginTop: '10px' }}
-                        type="button"
-                        title="Volta para a tela inicial para inserir novas IDs">
-                        🔄 NOVA ANÁLISE
-                    </button>
-                </>
-             )}
+        <div className="mt-6">
+            <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                🧑‍🤝‍🧑 {friendResults.length} Amigos Encontrados:
+            </h3>
+            <textarea
+                className="w-full p-3 h-64 bg-white border border-gray-300 rounded-lg shadow-inner font-mono text-sm resize-none"
+                readOnly
+                value={friendResults.join('\n')}
+            ></textarea>
+            <p className="text-sm text-gray-600 mt-2">
+                Copie e cole as IDs para a aba 'Valor de Inventário' para análise.
+            </p>
         </div>
     );
-  }
-
-  const renderReport = () => {
-      if (reportData?.reportHtml) {
-        return (
-            <div className="report-viewer-wrapper">
-                <h3>RELATÓRIO DE INVENTÁRIO (MONTUGA & STEAM APIs)</h3>
-                
-                <div className="report-viewer">
-                    <iframe
-                        srcDoc={reportData.reportHtml}
-                        title="Inventory Report"
-                        sandbox="allow-scripts allow-same-origin"
-                    />
-                </div>
-
-                <button 
-                    onClick={handleDownloadReport} 
-                    className="download-button"
-                    title="Baixa o relatório gerado nesta execução em formato HTML">
-                    ⬇️ DOWNLOAD RELATÓRIO DA EXECUÇÃO (.HTML)
-                </button>
-
-            </div>
-        );
-      }
-      return null;
-  }
-
-  const mainClass = reportData?.reportHtml || isLoading ? 'two-columns-layout' : 'one-column-layout';
+  };
 
   return (
-    <div className="art-cases-app">
-      <header>
-        <h1>Art Cases</h1>
-        <p className="subtitle">Verificação Profissional e Otimizada de Inventários Steam.</p>
-      </header>
-      
-      <main className={mainClass}>
-        <div className="input-log-panel">
-            {renderFormOrLogs()}
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 md:p-10">
+        <header className="mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
+            Steam Tool
+          </h1>
+          <p className="text-gray-600">
+            Análise de Inventário (Montuga API) e Busca de Amigos (Steam API).
+          </p>
+        </header>
+
+        {/* --- Tabs de Navegação --- */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('value')}
+            className={`py-2 px-4 text-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
+              activeTab === 'value'
+                ? 'border-b-4 border-indigo-600 text-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <DollarSign className="w-5 h-5" />
+            <span>Valor de Inventário</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('friends')}
+            className={`py-2 px-4 text-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
+              activeTab === 'friends'
+                ? 'border-b-4 border-indigo-600 text-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            <span>Lista de Amigos</span>
+          </button>
         </div>
-        
-        {/* Renderiza o painel de relatório se houver HTML ou se estiver em processamento */}
-        {/* O painel de log aparecerá no lugar do input na tela de processamento/resultado */}
-        {(reportData?.reportHtml || isLoading) && 
-            <div className="report-panel">
-                {renderReport()}
-            </div>
-        }
-        
-      </main>
-      
-      <footer>
-        <p>Desenvolvido por Art Cases. Integrado com Steam Web API e Montuga API.</p>
-      </footer>
+
+        {/* --- Área de Erro Global --- */}
+        {error && (
+          <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-lg mb-6 flex items-center space-x-3">
+            <XCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* --- Conteúdo da Aba 1: Valor de Inventário --- */}
+        {activeTab === 'value' && (
+          <div>
+            <p className="text-gray-700 mb-4">
+              Insira uma ou mais Steam IDs (separadas por vírgula ou espaço) para verificar o valor do inventário via Montuga API.
+            </p>
+            <textarea
+              className="w-full p-4 h-32 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 resize-none font-mono text-sm"
+              placeholder="Ex: 76561198000000001, 76561198000000002"
+              value={steamIds}
+              onChange={(e) => setSteamIds(e.target.value)}
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleProcessInventory}
+              disabled={isLoading}
+              className={`mt-4 w-full flex justify-center items-center space-x-3 py-3 px-6 border border-transparent text-lg font-semibold rounded-xl shadow-lg transition duration-300 ${
+                isLoading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-[1.01]'
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCcw className="w-5 h-5 animate-spin" />
+                  <span>Analisando... (Aguarde o Rate Limit)</span>
+                </>
+              ) : (
+                <>
+                  <DollarSign className="w-6 h-6" />
+                  <span>Calcular Valor</span>
+                </>
+              )}
+            </button>
+
+            {/* Resultados do Inventário */}
+            {results.length > 0 && (
+              <div className="mt-8 space-y-4">
+                <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">Resultados da Análise</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {results.map((item, index) => (
+                    <ValueResult key={index} item={item} />
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 pt-2">
+                    <Clock className="w-4 h-4 inline mr-1 align-sub text-blue-500" />
+                    O Rate Limit de 50 RPM (1.2s/ID) foi aplicado durante o processamento.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- Conteúdo da Aba 2: Lista de Amigos --- */}
+        {activeTab === 'friends' && (
+          <div>
+            <p className="text-gray-700 mb-4">
+              Insira a Steam ID de um usuário para buscar a lista de amigos via Steam API. O perfil e a lista de amigos devem ser **públicos**.
+            </p>
+            <input
+              type="text"
+              className="w-full p-4 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+              placeholder="Ex: 76561198000000001"
+              value={friendSteamId}
+              onChange={(e) => setFriendSteamId(e.target.value)}
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleGetFriends}
+              disabled={isLoading}
+              className={`mt-4 w-full flex justify-center items-center space-x-3 py-3 px-6 border border-transparent text-lg font-semibold rounded-xl shadow-lg transition duration-300 ${
+                isLoading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-[1.01]'
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCcw className="w-5 h-5 animate-spin" />
+                  <span>Buscando Amigos...</span>
+                </>
+              ) : (
+                <>
+                  <Users className="w-6 h-6" />
+                  <span>Buscar Lista de Amigos</span>
+                </>
+              )}
+            </button>
+
+            {/* Resultados da Lista de Amigos */}
+            <FriendsResult />
+          </div>
+        )}
+
+      </div>
     </div>
   );
-}
+};
 
 export default App;
