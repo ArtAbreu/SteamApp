@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
-import { RefreshCcw, Users, DollarSign, XCircle, CheckCircle, Clock } from 'lucide-react';
+import { RefreshCcw, DollarSign, XCircle, CheckCircle, Clock, Users } from 'lucide-react';
 
 // Estilização com Tailwind CSS
 const App = () => {
   const [steamIds, setSteamIds] = useState('');
   const [results, setResults] = useState([]);
-  const [friendSteamId, setFriendSteamId] = useState('');
-  const [friendResults, setFriendResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('value');
   const [error, setError] = useState(null);
 
   // Função para lidar com a busca de valor de inventário (Rota: /api/process)
@@ -47,48 +44,12 @@ const App = () => {
     }
   };
 
-  // Função para lidar com a busca de lista de amigos (Rota: /api/getfriends)
-  const handleGetFriends = async () => {
-    setError(null);
-    setIsLoading(true);
-    setFriendResults([]);
-
-    if (!friendSteamId.trim()) {
-      setError('Por favor, insira a Steam ID de origem para buscar a lista de amigos.');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/getfriends', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ steamId: friendSteamId.trim() }),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        setError(data.error || 'Ocorreu um erro desconhecido ao buscar amigos.');
-        setFriendResults([]);
-      } else {
-        setFriendResults(data.friends);
-      }
-    } catch (err) {
-      setError('Erro de conexão com o servidor. Verifique se o backend está rodando.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-
   // Componente de resultado de valor de inventário
   const ValueResult = ({ item }) => {
     const isSuccess = item.status === 'OK';
     const isPrivate = item.status.includes('private');
     const isRateLimited = item.status.includes('Rate Limit');
+    const isDnsError = item.status.includes('Montuga API: Erro de DNS');
 
     return (
       <div className={`p-4 rounded-xl shadow-md transition duration-300 ${
@@ -104,6 +65,8 @@ const App = () => {
             <Users className="w-5 h-5 text-yellow-600" />
           ) : isRateLimited ? (
              <Clock className="w-5 h-5 text-blue-600" />
+          ) : isDnsError ? (
+             <XCircle className="w-5 h-5 text-orange-600" />
           ) : (
             <XCircle className="w-5 h-5 text-red-600" />
           )}
@@ -120,37 +83,6 @@ const App = () => {
     );
   };
   
-  // Componente de resultado de lista de amigos
-  const FriendsResult = () => {
-    if (friendResults.length === 0) {
-        if (friendSteamId) {
-            return (
-                <div className="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg">
-                    <p>Nenhum amigo encontrado ou a lista é privada.</p>
-                    <p className="text-sm mt-1">Lembre-se: A lista de amigos e o perfil devem ser públicos.</p>
-                </div>
-            );
-        }
-        return null;
-    }
-    
-    return (
-        <div className="mt-6">
-            <h3 className="text-xl font-semibold mb-3 text-gray-800">
-                🧑‍🤝‍🧑 {friendResults.length} Amigos Encontrados:
-            </h3>
-            <textarea
-                className="w-full p-3 h-64 bg-white border border-gray-300 rounded-lg shadow-inner font-mono text-sm resize-none"
-                readOnly
-                value={friendResults.join('\n')}
-            ></textarea>
-            <p className="text-sm text-gray-600 mt-2">
-                Copie e cole as IDs para a aba 'Valor de Inventário' para análise.
-            </p>
-        </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 md:p-10">
@@ -159,35 +91,9 @@ const App = () => {
             Steam Tool
           </h1>
           <p className="text-gray-600">
-            Análise de Inventário (Montuga API) e Busca de Amigos (Steam API).
+            Análise de Valor de Inventário (Montuga API).
           </p>
         </header>
-
-        {/* --- Tabs de Navegação --- */}
-        <div className="flex border-b border-gray-200 mb-6">
-          <button
-            onClick={() => setActiveTab('value')}
-            className={`py-2 px-4 text-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
-              activeTab === 'value'
-                ? 'border-b-4 border-indigo-600 text-indigo-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <DollarSign className="w-5 h-5" />
-            <span>Valor de Inventário</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('friends')}
-            className={`py-2 px-4 text-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
-              activeTab === 'friends'
-                ? 'border-b-4 border-indigo-600 text-indigo-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Users className="w-5 h-5" />
-            <span>Lista de Amigos</span>
-          </button>
-        </div>
 
         {/* --- Área de Erro Global --- */}
         {error && (
@@ -197,11 +103,10 @@ const App = () => {
           </div>
         )}
 
-        {/* --- Conteúdo da Aba 1: Valor de Inventário --- */}
-        {activeTab === 'value' && (
-          <div>
+        {/* --- Conteúdo Principal: Valor de Inventário --- */}
+        <div>
             <p className="text-gray-700 mb-4">
-              Insira uma ou mais Steam IDs (separadas por vírgula ou espaço) para verificar o valor do inventário via Montuga API.
+              Insira uma ou mais Steam IDs (separadas por vírgula ou espaço) para verificar o valor do inventário.
             </p>
             <textarea
               className="w-full p-4 h-32 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 resize-none font-mono text-sm"
@@ -248,48 +153,6 @@ const App = () => {
               </div>
             )}
           </div>
-        )}
-
-        {/* --- Conteúdo da Aba 2: Lista de Amigos --- */}
-        {activeTab === 'friends' && (
-          <div>
-            <p className="text-gray-700 mb-4">
-              Insira a Steam ID de um usuário para buscar a lista de amigos via Steam API. O perfil e a lista de amigos devem ser **públicos**.
-            </p>
-            <input
-              type="text"
-              className="w-full p-4 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-              placeholder="Ex: 76561198000000001"
-              value={friendSteamId}
-              onChange={(e) => setFriendSteamId(e.target.value)}
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleGetFriends}
-              disabled={isLoading}
-              className={`mt-4 w-full flex justify-center items-center space-x-3 py-3 px-6 border border-transparent text-lg font-semibold rounded-xl shadow-lg transition duration-300 ${
-                isLoading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-[1.01]'
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCcw className="w-5 h-5 animate-spin" />
-                  <span>Buscando Amigos...</span>
-                </>
-              ) : (
-                <>
-                  <Users className="w-6 h-6" />
-                  <span>Buscar Lista de Amigos</span>
-                </>
-              )}
-            </button>
-
-            {/* Resultados da Lista de Amigos */}
-            <FriendsResult />
-          </div>
-        )}
 
       </div>
     </div>
