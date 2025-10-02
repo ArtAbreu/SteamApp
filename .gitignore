@@ -1,5 +1,4 @@
 # Conteúdo do arquivo .gitignore
 /node_modules
-/dist
 history.json
 .env  # CRÍTICO: Não enviar o arquivo com as chaves!
