@@ -1,0 +1,142 @@
+{
+  "76561197995757240": {
+    "success": true,
+    "date": "01/10/2025, 20:29:20",
+    "timestamp": 1759361360156,
+    "reason": "Processado: Profile is private"
+  },
+  "76561198006932826": {
+    "success": true,
+    "date": "01/10/2025, 20:12:46"
+  },
+  "76561198008967088": {
+    "success": true,
+    "date": "01/10/2025, 20:12:47"
+  },
+  "76561198020267933": {
+    "success": true,
+    "date": "01/10/2025, 20:12:48"
+  },
+  "76561198028361429": {
+    "success": true,
+    "date": "01/10/2025, 20:12:50"
+  },
+  "76561198030449111": {
+    "success": true,
+    "date": "01/10/2025, 20:29:20",
+    "timestamp": 1759361360156,
+    "reason": "Processado: Steam returned no items."
+  },
+  "76561198040688295": {
+    "success": true,
+    "date": "01/10/2025, 20:29:20",
+    "timestamp": 1759361360156,
+    "reason": "Processado: Steam returned no items."
+  },
+  "76561197962389569": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Steam returned no items."
+  },
+  "76561197962547907": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: VAC Ban detectado.",
+    "data": {
+      "steamId": "76561197962547907",
+      "realName": "Xxx",
+      "totalValueBRL": 0,
+      "vacBanned": true,
+      "gameBans": 0,
+      "casesPercentage": 0
+    }
+  },
+  "76561197963587456": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Sucesso no Inventário.",
+    "data": {
+      "steamId": "76561197963587456",
+      "realName": "DANADÃO",
+      "totalValueBRL": 13.965,
+      "vacBanned": false,
+      "gameBans": 0,
+      "casesPercentage": 0
+    }
+  },
+  "76561197963671791": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Steam returned no items."
+  },
+  "76561197963813793": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Steam returned no items."
+  },
+  "76561197963983748": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Steam returned no items."
+  },
+  "76561197964638101": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Profile is private"
+  },
+  "76561197966848312": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: VAC Ban detectado.",
+    "data": {
+      "steamId": "76561197966848312",
+      "realName": "IM-mall",
+      "totalValueBRL": 0,
+      "vacBanned": true,
+      "gameBans": 0,
+      "casesPercentage": 0
+    }
+  },
+  "76561197968458054": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Sucesso no Inventário.",
+    "data": {
+      "steamId": "76561197968458054",
+      "realName": "landic",
+      "totalValueBRL": 45.465,
+      "vacBanned": false,
+      "gameBans": 0,
+      "casesPercentage": 0
+    }
+  },
+  "76561197968571499": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: VAC Ban detectado.",
+    "data": {
+      "steamId": "76561197968571499",
+      "realName": "L10",
+      "totalValueBRL": 0,
+      "vacBanned": true,
+      "gameBans": 0,
+      "casesPercentage": 0
+    }
+  },
+  "76561197968600795": {
+    "success": true,
+    "date": "01/10/2025, 20:31:17",
+    "timestamp": 1759361477793,
+    "reason": "Processado: Steam returned no items."
+  }
+}
